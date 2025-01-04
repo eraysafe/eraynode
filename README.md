@@ -1,6 +1,6 @@
 # eraynode
 this is a example to show how node works on github action
-# ACCOUNTS_JSON
+### secret ACCOUNTS_JSON
 ```
 [  
   { "username": "u1", "password": "mi", "panelnum": "0" },  
