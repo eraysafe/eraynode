@@ -17,14 +17,24 @@ async function delayTime(ms) {
   for (const account of accounts) {
     const { username, password, panelnum } = account;
 
-    const browser = await puppeteer.launch({ headless: false });
+    // 启动浏览器，禁用沙箱并启用无头模式
+    const browser = await puppeteer.launch({
+      headless: true, // 在 GitHub Actions 中必须为 true
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage', // 避免内存不足问题
+        '--disable-accelerated-2d-canvas',
+        '--disable-gpu'
+      ]
+    });
     const page = await browser.newPage();
 
     let url = `https://panel${panelnum}.serv00.com/login/?next=/`;
 
     try {
       // 修改网址为新的登录页面
-      await page.goto(url);
+      await page.goto(url, { waitUntil: 'networkidle2' });
 
       // 清空用户名输入框的原有值
       const usernameInput = await page.$('#id_username');
@@ -46,7 +56,7 @@ async function delayTime(ms) {
       }
 
       // 等待登录成功（如果有跳转页面的话）
-      await page.waitForNavigation();
+      await page.waitForNavigation({ waitUntil: 'networkidle2' });
 
       // 判断是否登录成功
       const isLoggedIn = await page.evaluate(() => {
@@ -56,8 +66,8 @@ async function delayTime(ms) {
 
       if (isLoggedIn) {
         // 获取当前的UTC时间和北京时间
-        const nowUtc = formatToISO(new Date());// UTC时间
-        const nowBeijing = formatToISO(new Date(new Date().getTime() + 8 * 60 * 60 * 1000)); // 北京时间东8区，用算术来搞
+        const nowUtc = formatToISO(new Date()); // UTC时间
+        const nowBeijing = formatToISO(new Date(new Date().getTime() + 8 * 60 * 60 * 1000)); // 北京时间东8区
         console.log(`账号 ${username} 于北京时间 ${nowBeijing}（UTC时间 ${nowUtc}）登录成功！`);
       } else {
         console.error(`账号 ${username} 登录失败，请检查账号和密码是否正确。`);
@@ -77,8 +87,3 @@ async function delayTime(ms) {
 
   console.log('所有账号登录完成！');
 })();
-
-// 自定义延时函数
-function delayTime(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
